@@ -18,8 +18,9 @@ const credentials = JSON.parse(fs.readFileSync('credentials.json', 'utf-8'));
     await page.type('#login_field', credentials.username);
     await page.type('#password', credentials.password);
     await page.click('input[name="commit"]');
-    await page.waitForTimeout(2000);
-    await page.screenshot({ path: 'after-login.png' });
+    // Wait for navigation to complete after login
+    await page.waitForNavigation();
+    await page.screenshot({ path: '01after-login.png' });
     // Wait for successful login
     await page.waitForSelector('.avatar.circle');
 
@@ -33,39 +34,65 @@ const credentials = JSON.parse(fs.readFileSync('credentials.json', 'utf-8'));
 
         // TODO: Star the repository
         // HINT: Use selectors to identify and click on the star button
-        await page.waitForSelector('form.unstarred button');
-        await page.click('form.unstarred button');
-        await page.waitForTimeout(1000); // This timeout helps ensure that the action is fully processed
+        const starButton = await page.$('#repo-stars-counter-star');
+        if (starButton) {
+          await starButton.click();
+          await new Promise(resolve => setTimeout(resolve, 1000));
+        } else {
+          console.log(`Repository already starred or button not found for ${repo}`);
+        }
+        await new Promise(resolve => setTimeout(resolve, 1000));
+        //await page.waitForTimeout(1000); // This timeout helps ensure that the action is fully processed
     }
+    await page.screenshot({ path: '02after-starring.png' });
 
     // Navigate to the user's starred repositories page
     await page.goto(`https://github.com/${actualUsername}?tab=stars`);
 
-    //  Click on the "Create list" button
-    await page.click('button[data-hydro-click*="create_list"]');
-    await page.waitForSelector('input[name="list_name"]');
+
+    //  Click on the "Create list" button (with check and debug screenshot)
+    const createListButton = await page.$('text=Create list');
+    const list_name = "Proj10";
+    if (createListButton) {
+      await createListButton.click();
+      await new Promise(resolve => setTimeout(resolve, 200));
+      await page.screenshot({ path: 'zzz.png' });
+    } else {
+      console.log('Create list button not found!');
+      await page.screenshot({ path: '03no-create-list.png' });
+      // Optionally, you can exit or throw here if this is critical
+    }
 
     //  Create a list named "Node Libraries"
     // HINT: Wait for the input field and type the list name
-    await page.type('input[name="list_name"]', 'Node Libraries');
-    await page.waitForTimeout(1000);
+    await new Promise(resolve => setTimeout(resolve, 1000));
+    const listNameInput = await page.$(`input[placeholder="⭐️ Name this list"]`);
+    await page.screenshot({ path: '04before-inp-list.png' });
+    if (listNameInput) {
+      await listNameInput.type(list_name);
+      await new Promise(resolve => setTimeout(resolve, 1000));
+    } else {
+      console.log('List name input not found!');
+      await page.screenshot({ path: '05no-list-name-input.png' });
+    }
 
     // Wait for buttons to become visible
-    await page.waitForTimeout(1000);
-
+    await new Promise(resolve => setTimeout(resolve, 1000));
+    await page.screenshot({ path: '06checkcreatebutton.png' });
     // Identify and click the "Create" button
-    const buttons = await page.$$('.Button--primary.Button--medium.Button');
-    for (const button of buttons) {
-        const buttonText = await button.evaluate(node => node.textContent.trim());
-        if (buttonText === 'Create') {
-            await button.click();
-            break;
-        }
+    const createbutton = await page.$(`button:has-text("Create")`);
+    if (createbutton) {
+      await page.screenshot({ path: '06no-create-button.png' });
+      console.log("E");
+      await createbutton.click();
+      console.log("F");
+    } else {
+      console.log('Create button not found!');
     }
 
     // Allow some time for the list creation process
-    await page.waitForTimeout(2000);
-
+    await new Promise(resolve => setTimeout(resolve, 2000));
+    await page.screenshot({ path: '07check-list-creation.png' });
     for (const repo of repositories) {
         await page.goto(`https://github.com/${repo}`);
 
@@ -73,7 +100,7 @@ const credentials = JSON.parse(fs.readFileSync('credentials.json', 'utf-8'));
         // HINT: Open the dropdown, wait for it to load, and find the list by its name
         await page.waitForSelector('details-menu[role="menu"]');
         await page.click('details-menu[role="menu"]');
-        await page.waitForTimeout(1000);
+        await new Promise(resolve => setTimeout(resolve, 1000));
         const lists = await page.$$('.js-user-list-menu-form');
 
         for (const list of lists) {
@@ -83,10 +110,14 @@ const credentials = JSON.parse(fs.readFileSync('credentials.json', 'utf-8'));
             await list.click();
             break;
           }
+          else{
+            console.log(`List "Node Libraries" not found for repository ${repo}`);
+            await page.screenshot({ path: `08no-node-libraries-list-${repo}.png` });
+          }
         }
 
         // Allow some time for the action to process
-        await page.waitForTimeout(1000);
+        await new Promise(resolve => setTimeout(resolve, 1000));
 
         // Close the dropdown to finalize the addition to the list
         await page.click('details-menu[role="menu"]');
