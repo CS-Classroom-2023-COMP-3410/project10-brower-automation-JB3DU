@@ -80,7 +80,7 @@ const credentials = JSON.parse(fs.readFileSync('credentials.json', 'utf-8'));
     await new Promise(resolve => setTimeout(resolve, 1000));
     await page.screenshot({ path: '06checkcreatebutton.png' });
     // Identify and click the "Create" button
-    const createbutton = await page.$(`button:has-text("Create")`);
+    const createbutton = await page.$(`button:has-text("Create")`); //This doesn't work. It never works. Absolutely maddening. Seriously, wtf?
     if (createbutton) {
       await page.screenshot({ path: '06no-create-button.png' });
       console.log("E");
